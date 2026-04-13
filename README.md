@@ -2,7 +2,7 @@
 
 A full-stack Contact Manager app built to demonstrate E2E testing skills with Playwright.
 
-**Stack:** React (Vite) · Express · Prisma · SQLite · Tailwind CSS · Playwright
+**Stack:** React (Vite) · Express · Prisma · SQLite · Tailwind CSS · Playwright · Docker
 
 ## Project Structure
 
@@ -10,7 +10,9 @@ A full-stack Contact Manager app built to demonstrate E2E testing skills with Pl
 ├── client/          React SPA (Vite + Tailwind)
 ├── server/          Express REST API (Prisma + SQLite)
 ├── e2e/             Playwright E2E & API tests
-└── .github/         Build log & project docs
+├── .github/         Build log, CI pipeline
+├── Dockerfile       Multi-stage production build
+└── docker-compose.yml
 ```
 
 ## Quick Start
@@ -58,6 +60,22 @@ Playwright auto-starts both servers — no need to run `npm run dev` separately.
 
 ## Test Coverage
 
-- **9 UI tests** — CRUD flows, validation, search, confirm dialog
+- **10 UI tests** — CRUD flows, validation, search, confirm dialog, navigation
 - **8 API tests** — all endpoints, error cases, edge cases
+- **4 accessibility tests** — axe-core scans on all pages
+- **5 visual regression tests** — screenshot comparisons
 - **3 browsers** — Chromium, Firefox, WebKit
+- **75 total tests**
+
+## Docker
+
+```bash
+# Build and run with Docker Compose
+docker compose up --build
+
+# Or build manually
+docker build -t demo-site-crud .
+docker run -p 4000:4000 demo-site-crud
+```
+
+Open **http://localhost:4000** — serves both the API and the React UI.

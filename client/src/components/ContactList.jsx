@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchContacts, deleteContact } from "../api/contacts";
 import ConfirmDialog from "./ConfirmDialog";
@@ -8,17 +8,28 @@ export default function ContactList() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
+  const requestId = useRef(0);
 
-  const loadContacts = async (query = "") => {
+  const loadContacts = async (query = "", pageNum = 1) => {
+    const id = ++requestId.current;
     setLoading(true);
     try {
-      const data = await fetchContacts(query);
-      setContacts(data);
+      const result = await fetchContacts(query, pageNum);
+      if (id === requestId.current) {
+        setContacts(result.data);
+        setTotalPages(result.totalPages);
+        setPage(result.page);
+      }
     } catch {
-      setContacts([]);
+      if (id === requestId.current) {
+        setContacts([]);
+        setTotalPages(1);
+      }
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   };
 
@@ -28,18 +39,24 @@ export default function ContactList() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    loadContacts(search);
+    setPage(1);
+    loadContacts(search, 1);
+  };
+
+  const handlePageChange = (newPage) => {
+    loadContacts(search, newPage);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     await deleteContact(deleteTarget.id);
     setDeleteTarget(null);
-    loadContacts(search);
+    loadContacts(search, page);
   };
 
   return (
     <div data-testid="contact-list-page">
+      <h1 className="text-2xl font-bold mb-6">Contacts</h1>
       <form onSubmit={handleSearch} className="flex gap-2 mb-6" data-testid="search-form">
         <input
           type="text"
@@ -118,6 +135,30 @@ export default function ContactList() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6" data-testid="pagination">
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page <= 1}
+            className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            data-testid="pagination-prev"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600" data-testid="pagination-info">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages}
+            className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            data-testid="pagination-next"
+          >
+            Next
+          </button>
         </div>
       )}
 

@@ -90,13 +90,14 @@ export default function ContactForm() {
             type="text"
             value={form.firstName}
             onChange={handleChange}
+            aria-describedby={errors.firstName ? "error-firstName" : undefined}
             className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.firstName ? "border-red-500" : "border-gray-300"
             }`}
             data-testid="input-firstName"
           />
           {errors.firstName && (
-            <p className="text-red-500 text-sm mt-1" data-testid="error-firstName">
+            <p className="text-red-600 text-sm mt-1" id="error-firstName" role="alert" data-testid="error-firstName">
               {errors.firstName}
             </p>
           )}
@@ -112,13 +113,14 @@ export default function ContactForm() {
             type="text"
             value={form.lastName}
             onChange={handleChange}
+            aria-describedby={errors.lastName ? "error-lastName" : undefined}
             className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.lastName ? "border-red-500" : "border-gray-300"
             }`}
             data-testid="input-lastName"
           />
           {errors.lastName && (
-            <p className="text-red-500 text-sm mt-1" data-testid="error-lastName">
+            <p className="text-red-600 text-sm mt-1" id="error-lastName" role="alert" data-testid="error-lastName">
               {errors.lastName}
             </p>
           )}
@@ -134,13 +136,14 @@ export default function ContactForm() {
             type="text"
             value={form.email}
             onChange={handleChange}
+            aria-describedby={errors.email ? "error-email" : undefined}
             className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.email ? "border-red-500" : "border-gray-300"
             }`}
             data-testid="input-email"
           />
           {errors.email && (
-            <p className="text-red-500 text-sm mt-1" data-testid="error-email">
+            <p className="text-red-600 text-sm mt-1" id="error-email" role="alert" data-testid="error-email">
               {errors.email}
             </p>
           )}

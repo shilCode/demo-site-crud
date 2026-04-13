@@ -1,17 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
 app.use(express.json());
 
-// List contacts (with optional search)
+// List contacts (with optional search and pagination)
 app.get("/api/contacts", async (req, res) => {
-  const { search } = req.query;
+  const { search, page = 1, limit = 10 } = req.query;
+  const take = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+  const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * take;
+
   const where = search
     ? {
         OR: [
@@ -22,11 +26,22 @@ app.get("/api/contacts", async (req, res) => {
       }
     : {};
 
-  const contacts = await prisma.contact.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
+  const [contacts, total] = await Promise.all([
+    prisma.contact.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+    }),
+    prisma.contact.count({ where }),
+  ]);
+
+  res.json({
+    data: contacts,
+    total,
+    page: Math.max(parseInt(page, 10) || 1, 1),
+    totalPages: Math.ceil(total / take),
   });
-  res.json(contacts);
 });
 
 // Get single contact
@@ -102,6 +117,13 @@ app.delete("/api/contacts/:id", async (req, res) => {
     }
     res.status(500).json({ error: "Failed to delete contact" });
   }
+});
+
+// Serve static client files in production
+const publicDir = path.join(__dirname, "..", "public");
+app.use(express.static(publicDir));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
 app.listen(PORT, () => {

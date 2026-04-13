@@ -1,8 +1,10 @@
 const API_BASE = "/api/contacts";
 
-export async function fetchContacts(search = "") {
-  const url = search ? `${API_BASE}?search=${encodeURIComponent(search)}` : API_BASE;
-  const res = await fetch(url);
+export async function fetchContacts(search = "", page = 1) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  params.set("page", page);
+  const res = await fetch(`${API_BASE}?${params}`);
   if (!res.ok) throw new Error("Failed to fetch contacts");
   return res.json();
 }

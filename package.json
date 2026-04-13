@@ -8,6 +8,9 @@
     "build": "cd client && npm run build",
     "test:e2e": "cd e2e && npx playwright test",
     "test:e2e:ui": "cd e2e && npx playwright test --ui",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:test": "docker compose up --build -d && cd e2e && npx playwright test --config=playwright.docker.config.js && cd .. && docker compose down",
     "db:migrate": "cd server && npx prisma migrate dev",
     "db:seed": "cd server && node prisma/seed.js",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../e2e && npm install"

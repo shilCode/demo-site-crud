@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-const API_URL = "http://localhost:4000/api/contacts";
+const BASE = process.env.API_URL || "http://localhost:4000";
+const API_URL = `${BASE}/api/contacts`;
 
 test.describe("Contacts API", () => {
   let createdId;
@@ -26,7 +27,10 @@ test.describe("Contacts API", () => {
     const response = await request.get(API_URL);
     expect(response.ok()).toBeTruthy();
     const body = await response.json();
-    expect(Array.isArray(body)).toBeTruthy();
+    expect(Array.isArray(body.data)).toBeTruthy();
+    expect(body).toHaveProperty("total");
+    expect(body).toHaveProperty("page");
+    expect(body).toHaveProperty("totalPages");
   });
 
   test("POST /api/contacts — reject missing fields", async ({ request }) => {
@@ -113,8 +117,8 @@ test.describe("Contacts API", () => {
     const response = await request.get(`${API_URL}?search=${unique}`);
     expect(response.ok()).toBeTruthy();
     const body = await response.json();
-    expect(body.length).toBe(1);
-    expect(body[0].firstName).toBe(unique);
+    expect(body.data.length).toBe(1);
+    expect(body.data[0].firstName).toBe(unique);
   });
 
   test("GET /api/contacts/:id — 404 for non-existent", async ({ request }) => {

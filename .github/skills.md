@@ -118,16 +118,108 @@ Step-by-step record of what was implemented in this project. Use this file to re
 - All three `package.json` files had `npm install` run.
 - `npx prisma migrate dev --name init` created the SQLite database and migration.
 - `node prisma/seed.js` populated 5 sample contacts.
-- Playwright browsers still need to be installed: `npx playwright install`.
+- Playwright browsers installed via `npx playwright install`.
+
+---
+
+## Step 7 — Test Bug Fixes (Parallel Safety)
+
+- Tests were failing because 3 browser projects shared one DB with hardcoded emails → 409 duplicate email errors.
+- Fixed by generating unique emails/names per test via `uid()` helper (`Date.now()` + random suffix).
+- Fixed `not.toBeVisible()` on delete test — the contact name still existed in the closing confirm dialog. Changed to assert `toHaveCount(0)` on the table row instead.
+- Fixed race condition in `ContactList.jsx` — initial `loadContacts()` response could overwrite a search response. Added a `useRef` request counter to discard stale responses.
+
+**Files changed:** `e2e/tests/contacts.spec.js`, `client/src/components/ContactList.jsx`
+
+---
+
+## Step 8 — Visual Regression Tests
+
+- Added `e2e/tests/visual.spec.js` with 5 screenshot comparison tests:
+  1. Contact list page
+  2. Empty state (no search results)
+  3. New contact form
+  4. Form validation errors
+  5. Confirm delete dialog
+- Uses `toHaveScreenshot()` — baselines stored in `tests/visual.spec.js-snapshots/`.
+- Runs across all 3 browsers (15 visual tests total).
+
+**Files:** `e2e/tests/visual.spec.js`
+
+---
+
+## Step 9 — Accessibility Tests (`@axe-core/playwright`)
+
+- Installed `@axe-core/playwright` in `e2e/`.
+- Added `e2e/tests/accessibility.spec.js` with 4 axe-core scans:
+  1. Contact list page
+  2. New contact form
+  3. Form with validation errors
+  4. Confirm delete dialog
+- Fixed violations found by axe:
+  - Added `<h1>` heading to Contact list page (`page-has-heading-one`).
+  - Changed error text from `text-red-500` → `text-red-600` for WCAG AA contrast ratio.
+  - Added `aria-describedby` on inputs linking to error messages.
+  - Added `role="alert"` on error messages.
+  - Added `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` on confirm dialog.
+
+**Files:** `e2e/tests/accessibility.spec.js`, `client/src/components/ContactList.jsx`, `client/src/components/ContactForm.jsx`, `client/src/components/ConfirmDialog.jsx`
+
+---
+
+## Step 10 — Pagination
+
+- Server returns paginated responses: `{ data, total, page, totalPages }`.
+- `GET /api/contacts` now accepts `?page=1&limit=10` query params (default 10 per page, max 100).
+- Client `fetchContacts()` updated to pass page number.
+- `ContactList.jsx` shows Previous/Next pagination controls when `totalPages > 1`.
+- All pagination elements have `data-testid` attributes (`pagination`, `pagination-prev`, `pagination-next`, `pagination-info`).
+- API tests updated to handle new response shape (`body.data` array instead of flat array).
+
+**Files:** `server/src/index.js`, `client/src/api/contacts.js`, `client/src/components/ContactList.jsx`, `e2e/tests/api.spec.js`
+
+---
+
+## Step 11 — Docker
+
+- **Dockerfile** — multi-stage build:
+  1. `server` stage: installs deps, generates Prisma client.
+  2. `client-build` stage: installs deps, runs `vite build`.
+  3. `production` stage: copies server + built client into a single image, runs migrations + starts server.
+- **docker-compose.yml** — single `app` service on port 4000, persistent volume for SQLite DB.
+- **.dockerignore** — excludes `node_modules`, `dist`, `e2e`, `.git`.
+- Server updated to serve static files from `public/` directory and handle SPA routing with `*` catch-all.
+- CORS origin now configurable via `CORS_ORIGIN` env var.
+
+**Files:** `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `server/src/index.js`
+
+---
+
+## Step 12 — GitHub Actions CI Pipeline
+
+- `.github/workflows/ci.yml` with two jobs:
+  - **test**: installs deps, runs Prisma migrate + seed, builds client, installs Playwright browsers, runs full E2E suite. Uploads Playwright report and test results as artifacts.
+  - **docker**: builds Docker image and smoke-tests it with a `curl` health check. Only runs on `main` after tests pass.
+
+**Files:** `.github/workflows/ci.yml`
+
+---
+
+## Current Test Count: 75 tests
+
+| Suite | Tests | × Browsers | Total |
+|---|---|---|---|
+| UI CRUD (`contacts.spec.js`) | 10 | 3 | 30 |
+| API (`api.spec.js`) | 8 | 3 | 24 |
+| Accessibility (`accessibility.spec.js`) | 4 | 3 | 12 |
+| Visual Regression (`visual.spec.js`) | 5 | 3 | 15 |
+| **Total** | **27** | | **75** |
 
 ---
 
 ## What's NOT Yet Done (Future Steps)
 
-- [ ] Install Playwright browsers (`cd e2e && npx playwright install`)
-- [ ] Run the full E2E suite to verify all tests pass
-- [ ] CI pipeline (GitHub Actions)
-- [ ] Visual regression / screenshot comparison tests
-- [ ] Accessibility tests (`@axe-core/playwright`)
-- [ ] Pagination for large contact lists
-- [ ] Production build & deploy config
+- [ ] Add pagination E2E tests (seed >10 contacts, test Next/Previous navigation)
+- [ ] Test Docker build in CI with Playwright (containerized E2E)
+- [ ] Add API rate limiting
+- [ ] Add authentication/authorization layer
